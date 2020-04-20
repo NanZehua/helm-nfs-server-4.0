@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "polar-box-dev.fullname" . }}-nfs
+  labels:
+{{ include "polar-box-dev.labels" . | indent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.nfs.nfsPort }}
+      targetPort: {{ .Values.nfs.nfsPort }}
+      protocol: TCP
+      name: nfs-tcp-port
+  selector:
+    app.kubernetes.io/name: {{ include "polar-box-dev.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
