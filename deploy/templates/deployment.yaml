@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: nfs
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: nfs
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: nfs-tcp-port
+              containerPort: {{ .Values.nfs.nfsPort }}
+              protocol: TCP
+          securityContext:
+            capabilities:
+              add:
+                - SYS_ADMIN
+                - SETPCAP
+          env:
+            {{- range $index, $nfsExportRule := .Values.nfs.exports }}
+            - name: NFS_EXPORT_DIR_{{ $index }}
+              value: {{ $nfsExportRule }}
+            {{- end}}
+          volumeMounts:
+            - mountPath: {{ .Values.nfs.volumePath }}
+              name: {{ .Values.nfs.volumeName }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: {{ .Values.nfs.volumeName }}
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
